@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vexus Chat</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --dark-blue: #0d47a1;
+            --light-blue: #e8f0fe;
+            --background: #0a192f;
+            --sidebar: #0f213f;
+            --text: #ffffff;
+            --text-light: #cccccc;
+            --channel-active: rgba(74, 144, 226, 0.2);
+            --accent: #4facfe;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--background);
+            color: var(--text);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Full-screen layout */
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background-color: var(--sidebar);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo img {
+            width: 30px;
+            height: 30px;
+        }
+
+        .logo h1 {
+            font-size: 18px;
+            background: linear-gradient(90deg, var(--accent), #00f2fe);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        /* Channels */
+        .channels {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 0;
+        }
+
+        .channel-group {
+            margin-bottom: 20px;
+        }
+
+        .channel-group-title {
+            padding: 8px 20px;
+            color: var(--text-light);
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        .channel {
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .channel:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .channel.active {
+            background-color: var(--channel-active);
+        }
+
+        .channel-icon {
+            width: 20px;
+            text-align: center;
+        }
+
+        /* Main chat area */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+        }
+
+        .channel-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .message.sent {
+            align-self: flex-end;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.received {
+            align-self: flex-start;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-bottom-left-radius: 4px;
+        }
+
+        .message-sender {
+            font-weight: 600;
+            margin-bottom: 4px;
+            font-size: 14px;
+        }
+
+        .message-time {
+            font-size: 11px;
+            opacity: 0.7;
+            text-align: right;
+            margin-top: 4px;
+        }
+
+        /* Input area */
+        .input-area {
+            padding: 15px;
+            background-color: var(--sidebar);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            gap: 10px;
+        }
+
+        #messageInput {
+            flex: 1;
+            padding: 12px 15px;
+            border-radius: 20px;
+            border: none;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            outline: none;
+        }
+
+        #sendButton {
+            padding: 0 20px;
+            border-radius: 20px;
+            border: none;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        #sendButton:hover {
+            transform: translateY(-2px);
+        }
+
+        /* User panel */
+        .user-panel {
+            padding: 15px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .user-name {
+            flex: 1;
+            font-size: 14px;
+        }
+
+        /* Login modal */
+        .login-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .login-card {
+            background-color: var(--sidebar);
+            border-radius: 10px;
+            padding: 30px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .login-title {
+            font-size: 24px;
+            margin-bottom: 5px;
+            background: linear-gradient(90deg, var(--accent), var(--primary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .login-subtitle {
+            color: var(--text-light);
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .login-input {
+            width: 100%;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            border: none;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            outline: none;
+        }
+
+        .login-button {
+            width: 100%;
+            padding: 12px;
+            border-radius: 5px;
+            border: none;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Modal -->
+    <div class="login-modal" id="loginModal">
+        <div class="login-card">
+            <h2 class="login-title">Create Your Account</h2>
+            <p class="login-subtitle">Choose a username to join ScriptHub Chat</p>
+            <input type="text" class="login-input" id="usernameInput" placeholder="Username" maxlength="20">
+            <button class="login-button" id="registerButton">Continue</button>
+            <p style="margin-top: 15px; font-size: 12px; color: var(--text-light);">
+                Your account is tied to this device's hardware ID
+            </p>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div class="app-container" id="appContainer" style="display: none;">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <img src="https://i.imgur.com/JqYeZbL.png" alt="ScriptHub">
+                    <h1>ScriptHub</h1>
+                </div>
+            </div>
+
+            <div class="channels">
+                <div class="channel-group">
+                    <div class="channel-group-title">Script Channels</div>
+                    <div class="channel active" data-channel="script-chat">
+                        <div class="channel-icon"><i class="fas fa-code"></i></div>
+                        <div>Script Chat</div>
+                    </div>
+                    <div class="channel" data-channel="executor-chat">
+                        <div class="channel-icon"><i class="fas fa-terminal"></i></div>
+                        <div>Executor Chat</div>
+                    </div>
+                </div>
+
+                <div class="channel-group">
+                    <div class="channel-group-title">General</div>
+                    <div class="channel" data-channel="general-chat">
+                        <div class="channel-icon"><i class="fas fa-comments"></i></div>
+                        <div>General Chat</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="user-panel">
+                <div class="user-avatar" id="userAvatar">U</div>
+                <div class="user-name" id="userName">Username</div>
+            </div>
+        </div>
+
+        <!-- Main Chat Area -->
+        <div class="main">
+            <div class="chat-header">
+                <div class="channel-title" id="channelTitle">Script Chat</div>
+            </div>
+
+            <div class="messages" id="messages">
+                <div class="message received">
+                    <div class="message-sender">System</div>
+                    <div>Welcome to ScriptHub Chat! Select a channel to start chatting.</div>
+                    <div class="message-time">Just now</div>
+                </div>
+            </div>
+
+            <div class="input-area">
+                <input type="text" id="messageInput" placeholder="Type your message...">
+                <button id="sendButton">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <script>
+        // =============================================
+        // STEP 1: REPLACE THIS WITH YOUR FIREBASE CONFIG
+        // =============================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyALx3eSCmDsLebtQ1YTc-jE1UhRwouSFBY",
+  authDomain: "scripthub-chat.firebaseapp.com",
+  databaseURL: "https://scripthub-chat-default-rtdb.firebaseio.com",
+  projectId: "scripthub-chat",
+  storageBucket: "scripthub-chat.firebasestorage.app",
+  messagingSenderId: "281298153679",
+  appId: "1:281298153679:web:6b2a24fbb790167aa287ba",
+  measurementId: "G-ZVSF2M2RS9"
+        };
+        // =============================================
+
+        // Generate HWID (hardware ID)
+        function generateHWID() {
+            // Combine several browser and device characteristics
+            const components = [
+                navigator.hardwareConcurrency,
+                navigator.deviceMemory,
+                screen.width,
+                screen.height,
+                navigator.platform,
+                navigator.userAgent
+            ];
+            
+            // Create a hash of these components
+            let hwid = '';
+            components.forEach(comp => {
+                let hash = 0;
+                const str = String(comp);
+                for (let i = 0; i < str.length; i++) {
+                    const char = str.charCodeAt(i);
+                    hash = ((hash << 5) - hash) + char;
+                    hash |= 0; // Convert to 32bit integer
+                }
+                hwid += Math.abs(hash).toString(16).substring(0, 8);
+            });
+            
+            return hwid.substring(0, 32); // Return a 32-character HWID
+        }
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // DOM Elements
+        const loginModal = document.getElementById('loginModal');
+        const appContainer = document.getElementById('appContainer');
+        const usernameInput = document.getElementById('usernameInput');
+        const registerButton = document.getElementById('registerButton');
+        const userAvatar = document.getElementById('userAvatar');
+        const userName = document.getElementById('userName');
+        const messagesContainer = document.getElementById('messages');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const channelTitle = document.getElementById('channelTitle');
+        const channels = document.querySelectorAll('.channel');
+
+        // User data
+        const HWID = generateHWID();
+        let currentUser = null;
+        let currentChannel = 'script-chat';
+
+        // Check if user exists
+        function checkUserExists(hwid) {
+            return database.ref('users/' + hwid).once('value')
+                .then(snapshot => snapshot.exists());
+        }
+
+        // Register new user
+        function registerUser(username, hwid) {
+            const userColor = getRandomColor();
+            const userData = {
+                username: username,
+                hwid: hwid,
+                color: userColor,
+                createdAt: Date.now(),
+                lastLogin: Date.now()
+            };
+            
+            return database.ref('users/' + hwid).set(userData)
+                .then(() => userData);
+        }
+
+        // Get random color for user
+        function getRandomColor() {
+            const colors = ['#4facfe', '#1a73e8', '#00f2fe', '#4285f4', '#34a853', '#ea4335'];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        // Add message to chat
+        function addMessage(message, isSent) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', isSent ? 'sent' : 'received');
+            
+            const senderElement = document.createElement('div');
+            senderElement.classList.add('message-sender');
+            senderElement.textContent = message.sender;
+            if (message.color) {
+                senderElement.style.color = message.color;
+            }
+            
+            const textElement = document.createElement('div');
+            textElement.textContent = message.text;
+            
+            const timeElement = document.createElement('div');
+            timeElement.classList.add('message-time');
+            timeElement.textContent = new Date(message.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            
+            messageElement.appendChild(senderElement);
+            messageElement.appendChild(textElement);
+            messageElement.appendChild(timeElement);
+            
+            messagesContainer.appendChild(messageElement);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // Send message
+        function sendMessage() {
+            const messageText = messageInput.value.trim();
+            if (messageText === '') return;
+            
+            const message = {
+                text: messageText,
+                sender: currentUser.username,
+                timestamp: Date.now(),
+                color: currentUser.color,
+                channel: currentChannel
+            };
+            
+            database.ref('messages').push(message)
+                .catch(error => {
+                    console.error("Error sending message:", error);
+                });
+            
+            messageInput.value = '';
+        }
+
+        // Change channel
+        function changeChannel(channelId) {
+            currentChannel = channelId;
+            
+            // Update UI
+            channels.forEach(channel => {
+                channel.classList.toggle('active', channel.dataset.channel === channelId);
+            });
+            
+            channelTitle.textContent = document.querySelector(`.channel[data-channel="${channelId}"]`).textContent.trim();
+            
+            // Clear messages
+            messagesContainer.innerHTML = '';
+            
+            // Load messages for this channel
+            database.ref('messages')
+                .orderByChild('channel')
+                .equalTo(channelId)
+                .on('child_added', snapshot => {
+                    const message = snapshot.val();
+                    addMessage(message, message.sender === currentUser.username);
+                });
+        }
+
+        // Initialize the app
+        async function initApp() {
+            const userExists = await checkUserExists(HWID);
+            
+            if (userExists) {
+                // Load existing user
+                const snapshot = await database.ref('users/' + HWID).once('value');
+                currentUser = snapshot.val();
+                
+                // Update last login
+                await database.ref('users/' + HWID + '/lastLogin').set(Date.now());
+                
+                // Show chat
+                loginModal.style.display = 'none';
+                appContainer.style.display = 'flex';
+                
+                // Set user info
+                userAvatar.textContent = currentUser.username.charAt(0).toUpperCase();
+                userAvatar.style.backgroundColor = currentUser.color;
+                userName.textContent = currentUser.username;
+                
+                // Load initial channel
+                changeChannel(currentChannel);
+            } else {
+                // Show registration
+                loginModal.style.display = 'flex';
+            }
+        }
+
+        // Event listeners
+        registerButton.addEventListener('click', async () => {
+            const username = usernameInput.value.trim();
+            if (username.length < 3 || username.length > 20) {
+                alert("Username must be between 3-20 characters");
+                return;
+            }
+            
+            try {
+                currentUser = await registerUser(username, HWID);
+                
+                loginModal.style.display = 'none';
+                appContainer.style.display = 'flex';
+                
+                userAvatar.textContent = currentUser.username.charAt(0).toUpperCase();
+                userAvatar.style.backgroundColor = currentUser.color;
+                userName.textContent = currentUser.username;
+                
+                changeChannel(currentChannel);
+            } catch (error) {
+                console.error("Registration error:", error);
+                alert("Failed to create account. Please try again.");
+            }
+        });
+
+        channels.forEach(channel => {
+            channel.addEventListener('click', () => {
+                changeChannel(channel.dataset.channel);
+            });
+        });
+
+        sendButton.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        // Start the app
+        initApp();
+    </script>
+</body>
+</html>
